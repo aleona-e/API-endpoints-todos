@@ -8,7 +8,7 @@ from flask_swagger import swagger
 from flask_cors import CORS
 from utils import APIException, generate_sitemap
 from admin import setup_admin
-from models import db, User
+from models import db, User, Todo
 #from models import Person
 
 app = Flask(__name__)
@@ -30,6 +30,47 @@ def handle_invalid_usage(error):
 def sitemap():
     return generate_sitemap(app)
 
+@app.route('/todo', methods=['POST'])
+def create_todo():
+    body = request.get_json()
+    todo = Todo(text=body["text"], done=False)
+    db.session.add(todo)
+    db.session.commit()
+    return jsonify(todo.serialize())
+
+@app.route('/todo', methods=['GET'])
+def get_todos():
+    todos = Todo.query.all()
+    all_todos = list(map(lambda todo: todo.serialize(), todos))
+    return jsonify(all_todos)
+
+@app.route('/todo/<int:todo_id>', methods=['GET', 'PUT', 'DELETE'])
+def handle_todo(todo_id):
+    if request.method == 'GET':
+        todo = Todo.query.get(todo_id)
+        if todo is None:
+            raise APIException("Todo not found")
+        return jsonify(todo.serialize())
+
+    elif request.method == 'PUT':
+        todo = Todo.query.get(todo_id)
+        if todo is None:
+            raise APIException("Todo not found")
+        body = request.get_json()
+        if not ('done' in body):
+            raise APIException("no encontrado")
+        todo.done = body['done']
+        db.session.commit()
+        return jsonify(todo.serialize())
+        
+    elif request.method == 'DELETE':
+        todo = Todo.query.get(todo_id)
+        db.session.delete(todo)
+        db.session.commit()
+        return jsonify(todo.serialize())
+
+    
+
 @app.route('/user', methods=['GET'])
 def handle_hello():
 
@@ -39,7 +80,7 @@ def handle_hello():
 
     return jsonify(response_body), 200
 
-# this only runs if `$ python src/main.py` is executed
+# this only runs if `$  ` is executed
 if __name__ == '__main__':
     PORT = int(os.environ.get('PORT', 3000))
     app.run(host='0.0.0.0', port=PORT, debug=False)
