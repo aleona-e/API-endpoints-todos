@@ -33,6 +33,7 @@ def sitemap():
 @app.route('/todo', methods=['POST'])
 def create_todo():
     body = request.get_json()
+    print(body)
     todo = Todo(text=body["text"], done=False)
     db.session.add(todo)
     db.session.commit()
@@ -69,18 +70,6 @@ def handle_todo(todo_id):
         db.session.commit()
         return jsonify(todo.serialize())
 
-    
-
-@app.route('/user', methods=['GET'])
-def handle_hello():
-
-    response_body = {
-        "msg": "Hello, this is your GET /user response "
-    }
-
-    return jsonify(response_body), 200
-
-# this only runs if `$  ` is executed
 if __name__ == '__main__':
     PORT = int(os.environ.get('PORT', 3000))
     app.run(host='0.0.0.0', port=PORT, debug=False)
